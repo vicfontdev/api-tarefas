@@ -1,5 +1,6 @@
 import express from "express";
 import mysql from "mysql2/promise";
+import cors from "cors";
 
 const app = express();
 const port = 8000;
@@ -19,6 +20,7 @@ async function executarSQL(comandoSQL) {
     return result;
 }
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (request, response) => {
@@ -31,6 +33,21 @@ app.get("/boas-vindas", (request, response) => {
 
 app.get("/boas-vindas/:nome", (request, response) => {
     response.send(`Seja bem-vindo, ${request.params.nome}`);
+});
+
+//fazer login
+app.post("/login", async (req, res) => {
+    let busca = await executarSQL(`SELECT * FROM usuarios WHERE email = '${req.body.email}';`);
+    if(busca.length > 0){
+        let usuario = busca[0];
+        if(usuario.senha == req.body.senha){
+            delete usuario.senha;
+            res.send({usuario});
+            return;
+        }
+        res.send("Email ou senha inválidos");
+    }
+     res.send("Email ou senha inválidos");
 });
 
 //buscar usuarios
@@ -60,7 +77,12 @@ app.delete("/usuarios/:id", async (req, res) => {
 })
 
 app.get("/tarefas", async (req, res) => {
-    res.send(await executarSQL("SELECT * FROM tarefas;"))
+    res.send(await executarSQL("SELECT * FROM tarefas;"));
+    });
+
+app.get("/tarefas-do-usuario/:usuario_id", async (req, res) => 
+    {
+    res.send(await executarSQL(`SELECT * FROM tarefas WHERE usuario_id = ${req.params.usuario_id};`))
 })
 
 app.post("/tarefas", async (req, res) => {
